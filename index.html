@@ -116,7 +116,7 @@
     font-size:clamp(28px,3.5vw,46px);
     line-height:1.03;
     letter-spacing:-.06em;
-    max-width:500px;
+    max-width:540px;
     margin-bottom:16px;
   }
   .copy p{
@@ -125,8 +125,6 @@
     color:var(--text2);
     max-width:480px;
   }
-
-  .copy .accent{color:var(--brand)}
 
   .bottom-meta{
     max-width:500px;
@@ -166,38 +164,6 @@
     width:0%;
     background:linear-gradient(90deg,#2563EB,#60A5FA);
     transition:width .25s ease;
-  }
-  .mini{
-    margin-top:14px;
-    display:grid;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:10px;
-  }
-  .mini-item{
-    background:#fff;
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:12px;
-    min-width:0;
-  }
-  .mini-k{
-    font-size:10px;
-    font-weight:800;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:5px;
-  }
-  .mini-v{
-    font-size:18px;
-    font-weight:900;
-    letter-spacing:-.04em;
-  }
-  .mini-s{
-    margin-top:4px;
-    color:var(--text2);
-    font-size:12px;
-    line-height:1.4;
   }
 
   .right{
@@ -378,7 +344,6 @@
       border-radius:20px;
       padding:22px 18px;
     }
-    .mini{grid-template-columns:1fr}
     .copy h1{
       font-size:clamp(30px,10vw,42px);
       max-width:none;
@@ -420,7 +385,7 @@
     <section class="left">
       <div class="copy">
         <div class="eyebrow">Diagnóstico rápido</div>
-        <h1>Descubre si tu empresa tiene el control…<br><span class="accent">o solo acceso por cortesía.</span></h1>
+        <h1>Descubre qué tanto control tienes sobre tu empresa en digital.</h1>
         <p>Responde preguntas cortas. Según tu respuesta, la prueba avanza. Al final verás qué tanto riesgo corres de perder activos clave, depender de terceros o seguir operando con el famoso “eso lo veía otra persona”.</p>
       </div>
 
@@ -430,24 +395,6 @@
           <div class="progress-steps"><span id="progressPct">0</span>% completado</div>
         </div>
         <div class="bar"><span id="barFill"></span></div>
-
-        <div class="mini">
-          <div class="mini-item">
-            <div class="mini-k">Formato</div>
-            <div class="mini-v">1 a 1</div>
-            <div class="mini-s">Una pregunta por pantalla dentro del panel derecho.</div>
-          </div>
-          <div class="mini-item">
-            <div class="mini-k">Lógica</div>
-            <div class="mini-v">Dinámica</div>
-            <div class="mini-s">La siguiente pregunta cambia según tu respuesta.</div>
-          </div>
-          <div class="mini-item">
-            <div class="mini-k">Resultado</div>
-            <div class="mini-v">Riesgo</div>
-            <div class="mini-s">Control alto, parcial, riesgo alto o peligro crítico.</div>
-          </div>
-        </div>
       </div>
     </section>
 
