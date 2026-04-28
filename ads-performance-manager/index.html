@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ads Performance Manager</title>
+    <meta name="description" content="Panel interno para gestión diaria de campañas publicitarias." />
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+      :root {
+        --ink: #17201b;
+        --mist: #f4f7f5;
+        --line: #dce4df;
+        --forest: #235347;
+        --mint: #8fceb5;
+        --coral: #e36c5f;
+        --amber: #d99b2b;
+        --ocean: #2c6f8f;
+        --white: #ffffff;
+        --slate: #58645f;
+        --shadow: 0 18px 60px rgba(23, 32, 27, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--mist);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      button, input, textarea { font: inherit; }
+      button { cursor: pointer; }
+
+      .layout {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+      }
+      .sidebar {
+        border-right: 1px solid var(--line);
+        background: var(--white);
+        padding: 24px 20px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: var(--forest);
+        color: #fff;
+        font-weight: 900;
+      }
+      .brand small {
+        display: block;
+        color: var(--forest);
+        font-weight: 800;
+      }
+      .brand strong {
+        display: block;
+        font-size: 18px;
+      }
+      .nav {
+        margin-top: 34px;
+        display: grid;
+        gap: 6px;
+      }
+      .nav button {
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--slate);
+        padding: 11px 12px;
+        text-align: left;
+        font-weight: 750;
+      }
+      .nav button.active {
+        background: var(--forest);
+        color: #fff;
+      }
+      .source-note {
+        margin-top: 32px;
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+        color: var(--slate);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .source-note strong {
+        display: block;
+        color: var(--ink);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+
+      .main {
+        padding: 18px 28px 36px;
+      }
+      .wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        gap: 20px;
+      }
+      .panel, .card {
+        background: var(--white);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+      .header {
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .header .eyebrow {
+        color: var(--forest);
+        font-size: 13px;
+        font-weight: 800;
+      }
+      h1, h2, h3, p { margin: 0; }
+      h1 {
+        margin-top: 5px;
+        font-size: 32px;
+        letter-spacing: 0;
+        line-height: 1.1;
+      }
+      .muted {
+        color: var(--slate);
+        font-size: 14px;
+        margin-top: 8px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--mist);
+        padding: 0 12px;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--slate);
+      }
+      .btn {
+        height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--white);
+        color: var(--slate);
+        padding: 0 13px;
+        font-weight: 800;
+      }
+      .btn.primary {
+        border-color: var(--forest);
+        background: var(--forest);
+        color: #fff;
+      }
+      .btn:hover {
+        border-color: var(--forest);
+        color: var(--forest);
+      }
+      .btn.primary:hover {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .uploader {
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .uploader-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .error {
+        display: none;
+        margin: 0 18px 18px;
+        border: 1px solid rgba(227, 108, 95, 0.3);
+        border-radius: 6px;
+        background: rgba(227, 108, 95, 0.1);
+        color: var(--coral);
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .metric {
+        padding: 16px;
+      }
+      .metric small {
+        color: var(--slate);
+        font-weight: 750;
+      }
+      .metric strong {
+        display: block;
+        margin-top: 9px;
+        font-size: 25px;
+      }
+      .metric .delta {
+        display: inline-flex;
+        margin-top: 12px;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .good {
+        border: 1px solid rgba(35, 83, 71, 0.25);
+        background: rgba(35, 83, 71, 0.06);
+        color: var(--forest);
+      }
+      .bad {
+        border: 1px solid rgba(227, 108, 95, 0.25);
+        background: rgba(227, 108, 95, 0.08);
+        color: var(--coral);
+      }
+      .comparison {
+        padding: 16px;
+        background: var(--ink);
+        color: #fff;
+      }
+      .comparison small {
+        color: var(--mint);
+        font-weight: 850;
+      }
+      .comparison strong {
+        display: block;
+        margin-top: 12px;
+        font-size: 22px;
+      }
+      .comparison span {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255, 255, 255, 0.72);
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 420px;
+        gap: 20px;
+      }
+      .section-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .section-head h2 {
+        font-size: 17px;
+      }
+      .weeks {
+        padding: 16px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .week {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--mist);
+        padding: 9px 12px;
+        color: var(--slate);
+        font-size: 14px;
+        font-weight: 850;
+      }
+      .week.current {
+        background: var(--forest);
+        border-color: var(--forest);
+        color: #fff;
+      }
+      .week.previous {
+        background: rgba(44, 111, 143, 0.1);
+        border-color: var(--ocean);
+        color: var(--ocean);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 940px;
+        font-size: 14px;
+      }
+      th {
+        background: var(--mist);
+        color: var(--slate);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        text-align: left;
+        padding: 12px 14px;
+      }
+      td {
+        border-top: 1px solid var(--line);
+        padding: 12px 14px;
+        color: var(--slate);
+      }
+      td strong { color: var(--ink); }
+      .right { text-align: right; }
+
+      .diagnostics {
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+      }
+      .diagnostic {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+      }
+      .diagnostic-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .diagnostic h3 {
+        font-size: 15px;
+      }
+      .diagnostic p {
+        color: var(--slate);
+        line-height: 1.55;
+        margin-top: 9px;
+        font-size: 14px;
+      }
+      .tag {
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .tag.optimizar { background: rgba(227, 108, 95, 0.1); color: var(--coral); }
+      .tag.escalar { background: rgba(35, 83, 71, 0.08); color: var(--forest); }
+      .tag.revisar { background: rgba(217, 155, 43, 0.12); color: var(--amber); }
+      .tag.mantener { background: rgba(44, 111, 143, 0.12); color: var(--ocean); }
+
+      textarea {
+        display: block;
+        width: calc(100% - 32px);
+        min-height: 320px;
+        margin: 16px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--mist);
+        color: var(--ink);
+        padding: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        line-height: 1.55;
+      }
+
+      @media (max-width: 1020px) {
+        .layout { grid-template-columns: 1fr; }
+        .sidebar { display: none; }
+        .main { padding: 14px; }
+        .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .content-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 620px) {
+        h1 { font-size: 25px; }
+        .metric-grid { grid-template-columns: 1fr; }
+        .header, .uploader { align-items: stretch; }
+        .uploader-actions { width: 100%; }
+        .btn { flex: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-icon">AP</div>
+          <div>
+            <small>Ads Performance</small>
+            <strong>Manager</strong>
+          </div>
+        </div>
+        <nav class="nav">
+          <button class="active">Dashboard</button>
+          <button>CSV</button>
+          <button>Reporte</button>
+          <button>Google Sheets</button>
+        </nav>
+        <div class="source-note">
+          <strong>Próxima fuente</strong>
+          Google Sheets API queda separada para conectar credenciales y rangos sin tocar el dashboard.
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="wrap">
+          <section class="panel header">
+            <div>
+              <div class="eyebrow">Panel interno</div>
+              <h1>Ads Performance Manager</h1>
+              <p class="muted" id="sourceLabel">Vista con datos mock para validar la interfaz.</p>
+            </div>
+            <div>
+              <span class="pill" id="storageLabel">Mock</span>
+              <button class="btn" id="mockButton" type="button">Mock</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="uploader">
+              <div>
+                <h2>Carga CSV</h2>
+                <p class="muted">Meta Ads, campañas, conjuntos y anuncios con fechas semanales.</p>
+              </div>
+              <div class="uploader-actions">
+                <input id="csvInput" type="file" accept=".csv,text/csv" hidden />
+                <button class="btn primary" id="uploadButton" type="button">Subir CSV</button>
+                <button class="btn" id="clearButton" type="button">Limpiar</button>
+              </div>
+            </div>
+            <div class="error" id="errorBox"></div>
+          </section>
+
+          <section class="metric-grid" id="metricGrid"></section>
+
+          <section class="content-grid">
+            <div class="left-stack">
+              <section class="panel">
+                <div class="section-head">
+                  <h2>Semanas detectadas</h2>
+                </div>
+                <div class="weeks" id="weeks"></div>
+              </section>
+
+              <section class="panel" style="margin-top:20px">
+                <div class="section-head">
+                  <h2>Datos normalizados</h2>
+                  <span class="pill" id="rowsCount">0 filas</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Semana</th>
+                        <th>Campaña</th>
+                        <th>Conjunto</th>
+                        <th>Anuncio</th>
+                        <th class="right">Inversión</th>
+                        <th class="right">Resultados</th>
+                        <th class="right">CPA</th>
+                        <th class="right">ROAS</th>
+                        <th class="right">CTR</th>
+                        <th class="right">CPC</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+
+            <div>
+              <section class="panel">
+                <div class="section-head">
+                  <h2>Diagnóstico táctico</h2>
+                </div>
+                <div class="diagnostics" id="diagnostics"></div>
+              </section>
+
+              <section class="panel" style="margin-top:20px">
+                <div class="section-head">
+                  <h2>Reporte WhatsApp</h2>
+                  <button class="btn" id="copyButton" type="button">Copiar</button>
+                </div>
+                <textarea id="report" readonly></textarea>
+              </section>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const storageKey = "ads-performance-manager-live";
+      const mockRows = [
+        ["Prospección - Catálogo Abril", "Lookalike compradores 2%", "Video UGC oferta 01", 780, 58, 34, 12, 48, 13.45, 22.94, 2.8, 1.45, 0.58, 1.7, "2026-04-13", "2026-04-19"],
+        ["Remarketing - Carritos", "Carrito 14 días", "Carrusel prueba social", 420, 39, 28, 18, 35, 10.77, 15, 3.6, 2.2, 0.42, 2.3, "2026-04-13", "2026-04-19"],
+        ["Prospección - Catálogo Abril", "Lookalike compradores 2%", "Video UGC oferta 02", 960, 82, 51, 16, 69, 11.71, 18.82, 3.4, 1.82, 0.49, 1.9, "2026-04-20", "2026-04-26"],
+        ["Remarketing - Carritos", "Carrito 14 días", "Carrusel prueba social", 510, 46, 33, 21, 42, 11.09, 15.45, 3.2, 2.05, 0.47, 2.8, "2026-04-20", "2026-04-26"]
+      ].map((row, index) => normalizeArrayRow(row, index));
+
+      const aliases = {
+        campaign: ["campana", "campaña", "campaign", "campaign name", "nombre de campana"],
+        adSet: ["conjunto de anuncios", "ad set", "adset", "ad set name", "nombre del conjunto de anuncios"],
+        ad: ["anuncio", "ad", "ad name", "nombre del anuncio"],
+        spend: ["inversion", "inversión", "importe gastado", "amount spent", "spend", "gasto"],
+        results: ["resultados", "results", "resultado"],
+        purchases: ["compras", "purchases", "website purchases"],
+        conversations: ["conversaciones", "conversations", "mensajes", "messaging conversations started"],
+        initiatedPayments: ["pagos iniciados", "checkouts initiated", "initiated checkout", "initiate checkout"],
+        costPerResult: ["costo por resultado", "cost per result", "cpr", "coste por resultado"],
+        costPerPurchase: ["costo por compra", "cost per purchase", "cpp", "coste por compra"],
+        roas: ["roas", "purchase roas", "retorno de inversion publicitaria"],
+        ctr: ["ctr", "link ctr", "ctr de enlace"],
+        cpc: ["cpc", "cost per click", "costo por clic"],
+        frequency: ["frecuencia", "frequency"],
+        dateStart: ["fecha inicio", "fecha de inicio", "reporting starts", "start date", "starts"],
+        dateEnd: ["fecha fin", "fecha de fin", "reporting ends", "end date", "ends"]
+      };
+
+      const metricMeta = [
+        ["results", "Resultados", "number", true],
+        ["spend", "Inversión", "currency", true],
+        ["costPerResult", "CPA / costo por resultado", "currency", false],
+        ["roas", "ROAS", "ratio", true],
+        ["ctr", "CTR", "percentage", true],
+        ["cpc", "CPC", "currency", false],
+        ["frequency", "Frecuencia", "number", false]
+      ];
+
+      let state = loadState();
+      render();
+
+      document.getElementById("uploadButton").addEventListener("click", () => document.getElementById("csvInput").click());
+      document.getElementById("csvInput").addEventListener("change", handleCsv);
+      document.getElementById("clearButton").addEventListener("click", () => {
+        localStorage.removeItem(storageKey);
+        state = { rows: [], fileName: "", lastUpdated: "" };
+        render();
+      });
+      document.getElementById("mockButton").addEventListener("click", () => {
+        state = { rows: mockRows, fileName: "mock-performance.csv", lastUpdated: new Date().toISOString() };
+        saveState();
+        render();
+      });
+      document.getElementById("copyButton").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(document.getElementById("report").value);
+        document.getElementById("copyButton").textContent = "Copiado";
+        setTimeout(() => document.getElementById("copyButton").textContent = "Copiar", 1400);
+      });
+
+      function handleCsv(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        setError("");
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: result => {
+            const rows = normalizeCsvRows(result.data);
+            if (!rows.length) {
+              setError("No se encontraron fechas válidas para construir semanas.");
+              return;
+            }
+            state = { rows, fileName: file.name, lastUpdated: new Date().toISOString() };
+            saveState();
+            render();
+          },
+          error: error => setError(error.message)
+        });
+      }
+
+      function loadState() {
+        try {
+          return JSON.parse(localStorage.getItem(storageKey)) || { rows: [], fileName: "", lastUpdated: "" };
+        } catch {
+          return { rows: [], fileName: "", lastUpdated: "" };
+        }
+      }
+
+      function saveState() {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      }
+
+      function render() {
+        const rows = state.rows && state.rows.length ? state.rows : mockRows;
+        const usingMock = !(state.rows && state.rows.length);
+        const weeks = getWeekSummaries(rows);
+        const comparison = weeks.length >= 2 ? compareWeeks(weeks[weeks.length - 1], weeks[weeks.length - 2]) : null;
+
+        document.getElementById("sourceLabel").textContent = usingMock
+          ? "Vista con datos mock para validar la interfaz."
+          : `${state.fileName} · actualizado ${new Date(state.lastUpdated).toLocaleString("es-PE")}`;
+        document.getElementById("storageLabel").textContent = usingMock ? "Mock" : "LocalStorage";
+        renderMetrics(comparison);
+        renderWeeks(weeks, comparison);
+        renderTable(rows);
+        renderDiagnostics(comparison);
+        document.getElementById("report").value = buildReport(comparison);
+      }
+
+      function renderMetrics(comparison) {
+        const grid = document.getElementById("metricGrid");
+        if (!comparison) {
+          grid.innerHTML = `<div class="panel metric" style="grid-column:1/-1">Se necesita al menos dos semanas con fechas válidas para calcular variaciones.</div>`;
+          return;
+        }
+        const intro = `<article class="panel comparison"><small>Comparación activa</small><strong>${formatWeekRange(comparison.currentWeek.weekStart)}</strong><span>vs. ${formatWeekRange(comparison.previousWeek.weekStart)}</span></article>`;
+        const cards = comparison.variations.map(v => {
+          const delta = `${v.deltaPercent > 0 ? "+" : ""}${formatNumber(v.deltaPercent, 1)}%`;
+          const symbol = v.direction === "up" ? "↑" : v.direction === "down" ? "↓" : "→";
+          return `<article class="panel metric"><small>${v.label}</small><strong>${formatMetric(v.current, v.format)}</strong><span class="delta ${v.favorable ? "good" : "bad"}">${symbol} ${delta}</span><p class="muted">Anterior: ${formatMetric(v.previous, v.format)}</p></article>`;
+        }).join("");
+        grid.innerHTML = intro + cards;
+      }
+
+      function renderWeeks(weeks, comparison) {
+        document.getElementById("weeks").innerHTML = weeks.map(week => {
+          const cls = week.weekKey === comparison?.currentWeek.weekKey ? "current" : week.weekKey === comparison?.previousWeek.weekKey ? "previous" : "";
+          return `<span class="week ${cls}">${formatWeekRange(week.weekStart)}</span>`;
+        }).join("");
+      }
+
+      function renderTable(rows) {
+        document.getElementById("rowsCount").textContent = `${rows.length} filas`;
+        document.getElementById("tableBody").innerHTML = rows.slice(0, 12).map(row => `
+          <tr>
+            <td>${row.weekKey}</td>
+            <td><strong>${escapeHtml(row.campaign)}</strong></td>
+            <td>${escapeHtml(row.adSet)}</td>
+            <td>${escapeHtml(row.ad)}</td>
+            <td class="right">${formatCurrency(row.spend)}</td>
+            <td class="right">${formatNumber(row.results, 0)}</td>
+            <td class="right">${formatCurrency(row.costPerResult)}</td>
+            <td class="right">${formatNumber(row.roas, 2)}x</td>
+            <td class="right">${formatNumber(row.ctr, 1)}%</td>
+            <td class="right">${formatCurrency(row.cpc)}</td>
+          </tr>
+        `).join("");
+      }
+
+      function renderDiagnostics(comparison) {
+        const diagnostics = comparison ? comparison.diagnostics : [];
+        document.getElementById("diagnostics").innerHTML = diagnostics.map(item => `
+          <article class="diagnostic">
+            <div class="diagnostic-top">
+              <h3>${item.title}</h3>
+              <span class="tag ${item.recommendation.toLowerCase()}">${item.recommendation}</span>
+            </div>
+            <p>${item.detail}</p>
+          </article>
+        `).join("") || `<p class="muted">Aún no hay dos semanas disponibles para comparar.</p>`;
+      }
+
+      function normalizeCsvRows(rows) {
+        if (!rows.length) return [];
+        const headers = Object.keys(rows[0]);
+        const map = {};
+        headers.forEach(header => {
+          const normalized = normalizeHeader(header);
+          Object.entries(aliases).forEach(([field, list]) => {
+            if (!map[field] && list.map(normalizeHeader).includes(normalized)) map[field] = header;
+          });
+        });
+
+        return rows.map((row, index) => {
+          const start = parseDate(row[map.dateStart]);
+          const end = parseDate(row[map.dateEnd]) || start;
+          const anchor = start || end;
+          if (!anchor) return null;
+          const spend = parseNumber(row[map.spend]);
+          const results = parseNumber(row[map.results]);
+          const purchases = parseNumber(row[map.purchases]);
+          const weekKey = getWeekKey(anchor);
+          return {
+            id: `${weekKey}-${index}`,
+            campaign: text(row[map.campaign]) || "Sin campaña",
+            adSet: text(row[map.adSet]) || "Sin conjunto",
+            ad: text(row[map.ad]) || "Sin anuncio",
+            spend,
+            results,
+            purchases,
+            conversations: parseNumber(row[map.conversations]),
+            initiatedPayments: parseNumber(row[map.initiatedPayments]),
+            costPerResult: parseNumber(row[map.costPerResult]) || (results > 0 ? spend / results : 0),
+            costPerPurchase: parseNumber(row[map.costPerPurchase]) || (purchases > 0 ? spend / purchases : 0),
+            roas: parseNumber(row[map.roas]),
+            ctr: parseNumber(row[map.ctr]),
+            cpc: parseNumber(row[map.cpc]),
+            frequency: parseNumber(row[map.frequency]),
+            dateStart: toIso(start || anchor),
+            dateEnd: toIso(end || anchor),
+            weekStart: weekKey,
+            weekKey
+          };
+        }).filter(Boolean);
+      }
+
+      function normalizeArrayRow(row, index) {
+        const weekKey = getWeekKey(parseDate(row[14]));
+        return {
+          id: `${weekKey}-${index}`,
+          campaign: row[0],
+          adSet: row[1],
+          ad: row[2],
+          spend: row[3],
+          results: row[4],
+          purchases: row[5],
+          conversations: row[6],
+          initiatedPayments: row[7],
+          costPerResult: row[8],
+          costPerPurchase: row[9],
+          roas: row[10],
+          ctr: row[11],
+          cpc: row[12],
+          frequency: row[13],
+          dateStart: row[14],
+          dateEnd: row[15],
+          weekStart: weekKey,
+          weekKey
+        };
+      }
+
+      function getWeekSummaries(rows) {
+        const grouped = {};
+        rows.forEach(row => {
+          grouped[row.weekKey] = grouped[row.weekKey] || [];
+          grouped[row.weekKey].push(row);
+        });
+        return Object.entries(grouped).map(([weekKey, weekRows]) => summarizeWeek(weekKey, weekRows)).sort((a, b) => a.weekKey.localeCompare(b.weekKey));
+      }
+
+      function summarizeWeek(weekKey, rows) {
+        const sum = key => rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
+        const avg = key => {
+          const values = rows.map(row => Number(row[key]) || 0).filter(Boolean);
+          return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+        };
+        const spend = sum("spend");
+        const results = sum("results");
+        const purchases = sum("purchases");
+        return {
+          weekKey,
+          weekStart: weekKey,
+          spend,
+          results,
+          purchases,
+          conversations: sum("conversations"),
+          initiatedPayments: sum("initiatedPayments"),
+          costPerResult: results > 0 ? spend / results : avg("costPerResult"),
+          costPerPurchase: purchases > 0 ? spend / purchases : avg("costPerPurchase"),
+          roas: avg("roas"),
+          ctr: avg("ctr"),
+          cpc: avg("cpc"),
+          frequency: avg("frequency")
+        };
+      }
+
+      function compareWeeks(currentWeek, previousWeek) {
+        const variations = metricMeta.map(([key, label, format, higherIsBetter]) => {
+          const current = currentWeek[key] || 0;
+          const previous = previousWeek[key] || 0;
+          const delta = current - previous;
+          const deltaPercent = previous ? ((current - previous) / previous) * 100 : current ? 100 : 0;
+          const direction = Math.abs(delta) < 0.01 ? "flat" : delta > 0 ? "up" : "down";
+          const favorable = direction === "flat" ? true : higherIsBetter ? direction === "up" : direction === "down";
+          return { key, label, current, previous, delta, deltaPercent, direction, favorable, format };
+        });
+        return { currentWeek, previousWeek, variations, diagnostics: buildDiagnostics(currentWeek, previousWeek) };
+      }
+
+      function buildDiagnostics(current, previous) {
+        const diagnostics = [];
+        if (up(current.costPerResult, previous.costPerResult) && down(current.ctr, previous.ctr)) diagnostics.push({
+          title: "CPA sube y CTR baja",
+          detail: "La eficiencia cayó al mismo tiempo que el interés del anuncio. Prioriza nuevos ángulos creativos, hooks y piezas con prueba A/B.",
+          recommendation: "Optimizar"
+        });
+        if (up(current.frequency, previous.frequency) && down(current.ctr, previous.ctr)) diagnostics.push({
+          title: "Frecuencia sube y CTR baja",
+          detail: "La audiencia probablemente está viendo demasiado las mismas piezas. Rota creatividades y revisa saturación por conjunto.",
+          recommendation: "Revisar"
+        });
+        if (down(current.roas, previous.roas) && up(current.initiatedPayments, previous.initiatedPayments)) diagnostics.push({
+          title: "ROAS baja y pagos iniciados suben",
+          detail: "Hay intención, pero se pierde valor al final del embudo. Revisa checkout, oferta, medios de pago y velocidad de carga.",
+          recommendation: "Optimizar"
+        });
+        if (up(current.results, previous.results) && down(current.costPerResult, previous.costPerResult)) diagnostics.push({
+          title: "Más resultados con menor CPA",
+          detail: "La campaña ganó volumen y eficiencia. Considera subir presupuesto de forma gradual y proteger las creatividades ganadoras.",
+          recommendation: "Escalar"
+        });
+        if (!diagnostics.length) diagnostics.push({
+          title: "Rendimiento estable",
+          detail: "No hay señales fuertes de deterioro o escalamiento. Mantén monitoreo y busca aprendizajes por campaña o anuncio.",
+          recommendation: "Mantener"
+        });
+        return diagnostics;
+      }
+
+      function buildReport(comparison) {
+        if (!comparison) return "*Ads Performance Manager*\\n\\nAún no hay dos semanas disponibles para comparar.";
+        const metricLines = comparison.variations.map(v => {
+          const arrow = v.direction === "up" ? "↑" : v.direction === "down" ? "↓" : "→";
+          return `• *${v.label}:* ${formatMetric(v.current, v.format)} (${arrow} ${v.deltaPercent > 0 ? "+" : ""}${formatNumber(v.deltaPercent, 1)}%)`;
+        }).join("\\n");
+        const recommendationLines = comparison.diagnostics.map(d => `• *${d.recommendation}:* ${d.title}. ${d.detail}`).join("\\n");
+        return `*Ads Performance Manager*
+
+*Semana actual:* ${formatWeekRange(comparison.currentWeek.weekStart)}
+*Semana anterior:* ${formatWeekRange(comparison.previousWeek.weekStart)}
+
+*Variaciones clave*
+${metricLines}
+
+*Acciones tácticas*
+${recommendationLines}`;
+      }
+
+      function up(current, previous, threshold = 5) { return percent(current, previous) >= threshold; }
+      function down(current, previous, threshold = 5) { return percent(current, previous) <= -threshold; }
+      function percent(current, previous) { return previous ? ((current - previous) / previous) * 100 : current ? 100 : 0; }
+      function text(value) { return value == null ? "" : String(value).trim(); }
+      function normalizeHeader(value) {
+        return String(value || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\(.+?\\)/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+      }
+      function parseNumber(value) {
+        if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+        const raw = String(value ?? "").trim().replace(/\\s/g, "").replace(/[%$S/]/g, "");
+        if (!raw) return 0;
+        const comma = raw.lastIndexOf(",");
+        const dot = raw.lastIndexOf(".");
+        const normalized = comma > dot ? raw.replace(/\\./g, "").replace(",", ".") : raw.replace(/,/g, "");
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+      function parseDate(value) {
+        if (!value) return null;
+        if (typeof value === "number") return new Date(Date.UTC(1899, 11, 30) + value * 86400000);
+        const s = String(value).trim();
+        const iso = s.match(/^(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})/);
+        if (iso) return new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3]));
+        const local = s.match(/^(\\d{1,2})[-/](\\d{1,2})[-/](\\d{2,4})$/);
+        if (local) return new Date(Date.UTC(local[3].length === 2 ? +`20${local[3]}` : +local[3], +local[2] - 1, +local[1]));
+        const parsed = new Date(s);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+      function getWeekKey(date) {
+        const utc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+        const day = utc.getUTCDay() || 7;
+        utc.setUTCDate(utc.getUTCDate() - day + 1);
+        return toIso(utc);
+      }
+      function toIso(date) { return date.toISOString().slice(0, 10); }
+      function formatWeekRange(weekStart) {
+        const start = parseDate(weekStart);
+        const end = new Date(start.getTime() + 6 * 86400000);
+        const fmt = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short" });
+        return `${fmt.format(start)} - ${fmt.format(end)}`;
+      }
+      function formatCurrency(value) {
+        return new Intl.NumberFormat("es-PE", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value || 0);
+      }
+      function formatNumber(value, digits = 0) {
+        return new Intl.NumberFormat("es-PE", { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value || 0);
+      }
+      function formatMetric(value, format) {
+        if (format === "currency") return formatCurrency(value);
+        if (format === "percentage") return `${formatNumber(value, 1)}%`;
+        if (format === "ratio") return `${formatNumber(value, 2)}x`;
+        return formatNumber(value, value % 1 === 0 ? 0 : 1);
+      }
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+      }
+      function setError(message) {
+        const box = document.getElementById("errorBox");
+        box.textContent = message;
+        box.style.display = message ? "block" : "none";
+      }
+    </script>
+  </body>
+</html>
